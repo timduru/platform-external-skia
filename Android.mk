@@ -35,13 +35,15 @@ LOCAL_PATH:= $(call my-dir)
 ###############################################################################
 
 include $(CLEAR_VARS)
-LOCAL_FDO_SUPPORT := true
+#LOCAL_FDO_SUPPORT := true
 ifneq ($(strip $(TARGET_FDO_CFLAGS)),)
 	# This should be the last -Oxxx specified in LOCAL_CFLAGS
-	LOCAL_CFLAGS += -O2
+	LOCAL_CFLAGS += -O3
 endif
 
-LOCAL_ARM_MODE := thumb
+LOCAL_ARM_MODE := arm
+ARCH_ARM_HAVE_VFP := true
+ARCH_ARM_HAVE_NEON := true
 ifeq ($(TARGET_ARCH),arm)
 	ifeq ($(ARCH_ARM_HAVE_VFP),true)
 		LOCAL_CFLAGS += -DANDROID_LARGE_MEMORY_DEVICE
@@ -63,7 +65,8 @@ LOCAL_CFLAGS += \
 	-U_FORTIFY_SOURCE \
 	-D_FORTIFY_SOURCE=1 \
 	-DSKIA_IMPLEMENTATION=1 \
-	-Wno-clobbered
+	-Wno-clobbered \
+	-Wno-attributes
 
 LOCAL_CPPFLAGS := \
 	-std=c++11 \
@@ -667,6 +670,7 @@ LOCAL_SRC_FILES_arm += \
 	src/opts/SkUtils_opts_arm.cpp \
 	src/opts/SkXfermode_opts_arm.cpp
 
+
 ifeq ($(ARCH_ARM_HAVE_NEON), true)
 LOCAL_SRC_FILES_arm += \
 	src/opts/SkBitmapProcState_arm_neon.cpp \
@@ -677,7 +681,8 @@ LOCAL_SRC_FILES_arm += \
 	src/opts/SkMorphology_opts_neon.cpp \
 	src/opts/SkTextureCompression_opts_neon.cpp \
 	src/opts/SkUtils_opts_arm_neon.cpp \
-	src/opts/SkXfermode_opts_arm_neon.cpp
+	src/opts/SkXfermode_opts_arm_neon.cpp \
+	src/opts/ext/S32_Opaque_D32_filter_DX_shaderproc_neon.cpp
 
 LOCAL_CFLAGS_arm += \
 	-DSK_ARM_HAS_NEON
@@ -763,7 +768,7 @@ include $(BUILD_SHARED_LIBRARY)
 #
 
 # benchmark (timings)
-include $(BASE_PATH)/bench/Android.mk
+# include $(BASE_PATH)/bench/Android.mk
 
 # diamond-master (one test to rule them all)
-include $(BASE_PATH)/dm/Android.mk
+# include $(BASE_PATH)/dm/Android.mk
