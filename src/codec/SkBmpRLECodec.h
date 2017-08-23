@@ -4,6 +4,8 @@
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
  */
+#ifndef SkBmpRLECodec_DEFINED
+#define SkBmpRLECodec_DEFINED
 
 #include "SkBmpCodec.h"
 #include "SkColorTable.h"
@@ -23,7 +25,7 @@ public:
      * Called only by SkBmpCodec::NewFromStream
      * There should be no other callers despite this being public
      *
-     * @param srcInfo contains the source width and height
+     * @param info contains properties of the encoded data
      * @param stream the stream of encoded image data
      * @param bitsPerPixel the number of bits used to store each pixel
      * @param numColors the number of colors in the color table
@@ -33,7 +35,7 @@ public:
      *               headers
      * @param rowOrder indicates whether rows are ordered top-down or bottom-up
      */
-    SkBmpRLECodec(const SkImageInfo& srcInfo, SkStream* stream,
+    SkBmpRLECodec(int width, int height, const SkEncodedInfo& info, SkStream* stream,
             uint16_t bitsPerPixel, uint32_t numColors, uint32_t bytesPerColor,
             uint32_t offset, SkCodec::SkScanlineOrder rowOrder);
 
@@ -45,7 +47,7 @@ protected:
                        size_t dstRowBytes, const Options&, SkPMColor*,
                        int*, int*) override;
 
-    SkCodec::Result prepareToDecode(const SkImageInfo& dstInfo,
+    SkCodec::Result onPrepareToDecode(const SkImageInfo& dstInfo,
             const SkCodec::Options& options, SkPMColor inputColorPtr[],
             int* inputColorCount) override;
 
@@ -55,7 +57,7 @@ private:
      * Creates the color table
      * Sets colorCount to the new color count if it is non-nullptr
      */
-    bool createColorTable(int* colorCount);
+    bool createColorTable(SkColorType dstColorType, int* colorCount);
 
     bool initializeStreamBuffer();
 
@@ -86,30 +88,32 @@ private:
      */
     int decodeRows(const SkImageInfo& dstInfo, void* dst, size_t dstRowBytes,
             const Options& opts) override;
+    int decodeRLE(const SkImageInfo& dstInfo, void* dst, size_t dstRowBytes);
 
     bool skipRows(int count) override;
 
     SkSampler* getSampler(bool createIfNecessary) override;
 
-    SkAutoTUnref<SkColorTable>          fColorTable;    // owned
+    sk_sp<SkColorTable>        fColorTable;
     // fNumColors is the number specified in the header, or 0 if not present in the header.
-    const uint32_t                      fNumColors;
-    const uint32_t                      fBytesPerColor;
-    const uint32_t                      fOffset;
+    const uint32_t             fNumColors;
+    const uint32_t             fBytesPerColor;
+    const uint32_t             fOffset;
 
-    static constexpr size_t             kBufferSize = 4096;
-    uint8_t                             fStreamBuffer[kBufferSize];
-    size_t                              fBytesBuffered;
+    static constexpr size_t    kBufferSize = 4096;
+    uint8_t                    fStreamBuffer[kBufferSize];
+    size_t                     fBytesBuffered;
 
-    uint32_t                            fCurrRLEByte;
-    int                                 fSampleX;
-    SkAutoTDelete<SkSampler>            fSampler;
+    uint32_t                   fCurrRLEByte;
+    int                        fSampleX;
+    std::unique_ptr<SkSampler> fSampler;
 
     // Scanline decodes allow the client to ask for a single scanline at a time.
     // This can be tricky when the RLE encoding instructs the decoder to jump down
     // multiple lines.  This field keeps track of lines that need to be skipped
     // on subsequent calls to decodeRows().
-    int                                 fLinesToSkip;
+    int                        fLinesToSkip;
 
     typedef SkBmpCodec INHERITED;
 };
+#endif  // SkBmpRLECodec_DEFINED
